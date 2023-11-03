@@ -117,9 +117,17 @@
 # pytorch_total_params = sum(p.numel() for p in vocoder.parameters() if p.requires_grad)
 # print(pytorch_total_params)
 
-from models.tortoise import TortoiseModel
+# from models.tortoise import TortoiseModel
 
 
-tts = TortoiseModel()
+# tts = TortoiseModel()
 
-del tts
+# del tts
+
+
+from toolkit.latent import TortoiseLatent
+
+tl = TortoiseLatent()
+voice_samples = tl.load_voice_files("/home/gpuserver/Desktop/sawradip/tortoise_tuner/ai-voice-cloning/voices/neil")
+cond_latents = tl.get_conditioning_latents(voice_samples)
+tl.save_conditioning_latents('demor',  cond_latents)

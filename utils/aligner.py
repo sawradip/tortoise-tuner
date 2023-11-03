@@ -5,9 +5,10 @@ import torchaudio
 from transformers import Wav2Vec2ForCTC, Wav2Vec2FeatureExtractor, Wav2Vec2CTCTokenizer, Wav2Vec2Processor
 
 from tortoise.utils.audio import load_audio
-from tortoise.utils.device import get_device
+# from tortoise.utils.device import get_device
 
-import tortoise.utils.torch_intermediary as ml
+import utils.torch_intermediary as ml
+
 
 def max_alignment(s1, s2, skip_character='~', record=None):
     """
@@ -52,13 +53,16 @@ class Wav2VecAlignment:
     Uses wav2vec2 to perform audio<->text alignment.
     """
     def __init__(self, device=None):
-        if device is None:
-            device = torch.device(get_device())
 
+        if device:
+            self.device = device
+        else:
+            self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        
         self.model = Wav2Vec2ForCTC.from_pretrained("jbetker/wav2vec2-large-robust-ft-libritts-voxpopuli").cpu()
         self.feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(f"facebook/wav2vec2-large-960h")
         self.tokenizer = Wav2Vec2CTCTokenizer.from_pretrained('jbetker/tacotron-symbols')
-        self.device = device
+        # self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     def align(self, audio, expected_text, audio_sample_rate=24000):
         orig_len = audio.shape[-1]
