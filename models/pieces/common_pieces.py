@@ -5,14 +5,6 @@ from torch import nn
 from models.pieces.xtransformers import  RelativePositionBias
 
 
-def do_gc():
-    gc.collect()
-    try:
-        torch.cuda.empty_cache()
-    except Exception as e:
-        pass
-
-
 class GroupNorm32(nn.GroupNorm):
     def forward(self, x):
         return super().forward(x.float()).type(x.dtype)

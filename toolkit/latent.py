@@ -12,10 +12,11 @@ from models.tortoise import TortoiseModel
 from utils.audio import load_audio, pad_or_truncate, wav_to_univnet_mel
 from utils.helpers.mel import TorchMelSpectrogram
 
-class TortoiseLatent(TortoiseModel):
+class TortoiseLatent():
     def __init__(self):
         super().__init__()
         self.input_sample_rate = 22050
+        self.tortoise_model = TortoiseModel()
 
         # self.voice_sample = self.load_voice_files(audio_files)
 
@@ -151,12 +152,16 @@ class TortoiseLatent(TortoiseModel):
 
             auto_conds = torch.stack(auto_conds, dim=1)
             # self.autoregressive = migrate_to_device( self.autoregressive, device )
-            auto_latent = self.autoregressive.get_conditioning(auto_conds)
+            print('Entering Autoregressive Processing')
+            auto_latent = self.autoregressive.get_conditioning(auto_conds.to(self.device))
+            print('Finished Autoregressive Processing')
             # self.autoregressive = migrate_to_device( self.autoregressive, self.device if self.preloaded_tensors else 'cpu' )
 
             diffusion_conds = torch.stack(diffusion_conds, dim=1)
+            print('Entering Diffusion Processing')
             # self.diffusion = migrate_to_device( self.diffusion, device )
-            diffusion_latent = self.diffusion.get_conditioning(diffusion_conds)
+            diffusion_latent = self.diffusion.get_conditioning(diffusion_conds.to(self.device))
+            print('Finished Diffusion Processing')
             # self.diffusion = migrate_to_device( self.diffusion, self.device if self.preloaded_tensors else 'cpu' )
 
         if return_mels:
