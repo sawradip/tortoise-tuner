@@ -19,7 +19,7 @@ class TortoiseModel:
                  vocoder_name = 'bigvgan',
                  pretrained = False):
 
-        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        # self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.enable_redaction = enable_redaction
         self.enable_cvvp = enable_cvvp
         self.enable_optimization = enable_optimization

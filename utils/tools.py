@@ -1,6 +1,8 @@
 import gc
 import torch
 
+CPU_DEVICE = torch.device("cpu")
+ACC_DEVICE = torch.device("cuda") if torch.cuda.is_available() else CPU_DEVICE
 def do_gc():
     gc.collect()
     try:

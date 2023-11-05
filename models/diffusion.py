@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch import autocast
 
 import utils.torch_intermediary as ml
+from utils.tools import ACC_DEVICE, CPU_DEVICE
 from models.pieces.diffusion_pieces import is_latent, timestep_embedding, DiffusionLayer, TimestepEmbedSequential, ResBlock
 from models.pieces.common_pieces import normalization, AttentionBlock
 
@@ -99,13 +100,19 @@ class DiffusionTts(nn.Module):
             'time_embed': list(self.time_embed.parameters()),
         }
         return groups
-
+    
+        
     def get_conditioning(self, conditioning_input):
         speech_conditioning_input = conditioning_input.unsqueeze(1) if len(
             conditioning_input.shape) == 3 else conditioning_input
         conds = []
+        print('Obtaining Dffusion Conditioning')
         for j in range(speech_conditioning_input.shape[1]):
-            conds.append(self.contextual_embedder(speech_conditioning_input[:, j]))
+            conditioning_input_piece = speech_conditioning_input[:, j].to(ACC_DEVICE)
+            conditioning_output_piece = self.contextual_embedder(conditioning_input_piece)
+            conditioning_output_piece_cpu = conditioning_output_piece.to(CPU_DEVICE)
+            del conditioning_output_piece
+            conds.append(conditioning_output_piece_cpu)
         conds = torch.cat(conds, dim=-1)
         conds = conds.mean(dim=-1)
         return conds

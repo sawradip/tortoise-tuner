@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from transformers import GPT2Config, LogitsProcessorList
 
 import utils.torch_intermediary as ml
+from utils.tools import ACC_DEVICE, CPU_DEVICE
 from models.pieces.autoregressive_pieces import build_hf_gpt_transformer, ConditioningEncoder, GPT2InferenceModel, MelEncoder, TypicalLogitsWarper
 
 class UnifiedVoice(nn.Module):
@@ -152,8 +153,13 @@ class UnifiedVoice(nn.Module):
         speech_conditioning_input = speech_conditioning_input.unsqueeze(1) if len(
             speech_conditioning_input.shape) == 3 else speech_conditioning_input
         conds = []
+        print('Obtaining Autoregressive Conditioning')
         for j in range(speech_conditioning_input.shape[1]):
-            conds.append(self.conditioning_encoder(speech_conditioning_input[:, j]))
+            conditioning_input_piece = speech_conditioning_input[:, j].to(ACC_DEVICE)
+            conditioning_output_piece = self.conditioning_encoder(conditioning_input_piece)
+            conditioning_output_piece_cpu = conditioning_output_piece.to(CPU_DEVICE)
+            del conditioning_output_piece
+            conds.append(conditioning_output_piece_cpu)
         conds = torch.stack(conds, dim=1)
         conds = conds.mean(dim=1)
         return conds

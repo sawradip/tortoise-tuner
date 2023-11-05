@@ -1,5 +1,5 @@
-# import torch
-# from models import UnifiedVoice
+import torch
+from models import UnifiedVoice
 
 # # gpt = UnifiedVoice(model_dim=256, heads=4, train_solo_embeddings=True, use_mel_codes_as_input=True, max_conditioning_inputs=4)
 # # l = gpt(torch.randn(2, 3, 80, 800),
@@ -9,21 +9,21 @@
 # #         torch.tensor([250*256,195*256]))
 # # gpt.text_forward(torch.randn(2,80,800), torch.randint(high=50, size=(2,80)), torch.tensor([32, 80]))
 
-# # dimensionality = {
-# #                 "max_mel_tokens": 604,
-# #                 "max_text_tokens": 402,
-# #                 "max_conditioning_inputs": 2,
-# #                 "layers": 30,
-# #                 "model_dim": 1024,
-# #                 "heads": 16,
-# #                 "number_text_tokens": 255,
-# #                 "start_text_token": 255,
-# #                 "checkpointing": False,
-# #                 "train_solo_embeddings": False
-# #             }
+# dimensionality = {
+#                 "max_mel_tokens": 604,
+#                 "max_text_tokens": 402,
+#                 "max_conditioning_inputs": 2,
+#                 "layers": 30,
+#                 "model_dim": 1024,
+#                 "heads": 16,
+#                 "number_text_tokens": 255,
+#                 "start_text_token": 255,
+#                 "checkpointing": False,
+#                 "train_solo_embeddings": False
+#             }
 
-# # autoregressive = UnifiedVoice(**dimensionality).cpu().eval()
-# # autoregressive.load_state_dict(torch.load("/home/gpuserver/Desktop/sawradip/tortoise_tuner/ai-voice-cloning/models/tortoise/autoregressive.pth"))
+# autoregressive = UnifiedVoice(**dimensionality).cpu().eval()
+# autoregressive.load_state_dict(torch.load("/home/gpuserver/Desktop/sawradip/tortoise_tuner/ai-voice-cloning/models/tortoise/autoregressive.pth"))
 
 
 # # from models import CLVP
@@ -131,3 +131,4 @@ tl = TortoiseLatent()
 voice_samples = tl.load_voice_files("/home/gpuserver/Desktop/sawradip/tortoise_tuner/ai-voice-cloning/voices/neil")
 cond_latents = tl.get_conditioning_latents(voice_samples)
 tl.save_conditioning_latents('demor',  cond_latents)
+print('did it!')

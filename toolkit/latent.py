@@ -9,6 +9,7 @@ from glob import glob
 from tqdm.auto import tqdm
 from models.tortoise import TortoiseModel
 
+from utils.tools import ACC_DEVICE, CPU_DEVICE, do_gc
 from utils.audio import load_audio, pad_or_truncate, wav_to_univnet_mel
 from utils.helpers.mel import TorchMelSpectrogram
 
@@ -17,7 +18,8 @@ class TortoiseLatent():
         super().__init__()
         self.input_sample_rate = 22050
         self.tortoise_model = TortoiseModel()
-
+        self.autoregressive = self.tortoise_model.load_autoregressive()
+        self.diffusion = self.tortoise_model.load_diffusion()
         # self.voice_sample = self.load_voice_files(audio_files)
 
     def load_voice_files(self, audio_dir=None, audio_files = None):
@@ -59,7 +61,7 @@ class TortoiseLatent():
             clip = clip[:, rand_start:rand_start + cond_length]
         mel_clip = TorchMelSpectrogram(sampling_rate=self.input_sample_rate)(clip.unsqueeze(0)).squeeze(0)
         mel_clip = mel_clip.unsqueeze(0)
-        return mel_clip.to(self.device)
+        return mel_clip.to(ACC_DEVICE)
 
         # return migrate_to_device(mel_clip, device)
         
@@ -91,7 +93,7 @@ class TortoiseLatent():
                 rolloff=0.85,
                 resampling_method="kaiser_window",
                 beta=8.555504641634386,
-            ).to(self.device)
+            ).to(ACC_DEVICE)
 
             resampler_24K = torchaudio.transforms.Resample(
                 self.input_sample_rate,
@@ -100,7 +102,7 @@ class TortoiseLatent():
                 rolloff=0.85,
                 resampling_method="kaiser_window",
                 beta=8.555504641634386,
-            ).to(self.device)
+            ).to(ACC_DEVICE)
 
             # voice_samples = [migrate_to_device(v, device)  for v in voice_samples]
 
@@ -108,14 +110,14 @@ class TortoiseLatent():
             diffusion_conds = []
 
             if original_ar:
-                samples = [resampler_22K(sample) for sample in self.voice_samples]
+                samples = [resampler_22K(sample.to(ACC_DEVICE)).detach().to(CPU_DEVICE) for sample in self.voice_samples]
                 for sample in tqdm(samples, desc="Computing AR conditioning latents..."):
                     auto_conds.append(self.format_conditioning(sample, 
                                                         #   device=device, 
                                                         #   sampling_rate=self.input_sample_rate, 
                                                           cond_length=132300))
             else:
-                samples = [resampler_22K(sample) for sample in voice_samples]
+                samples = [resampler_22K(sample.to(ACC_DEVICE)).detach().to(CPU_DEVICE) for sample in voice_samples]
                 concat = torch.cat(samples, dim=-1)
                 chunk_size = concat.shape[-1]
 
@@ -137,13 +139,13 @@ class TortoiseLatent():
                 
 
             if original_diffusion:
-                samples = [resampler_24K(sample) for sample in voice_samples]
+                samples = [resampler_24K(sample.to(ACC_DEVICE)).detach().to(CPU_DEVICE) for sample in voice_samples]
                 for sample in tqdm(samples, desc="Computing diffusion conditioning latents..."):
                     sample = pad_or_truncate(sample, 102400)
                     cond_mel = wav_to_univnet_mel(sample, do_normalization=False, device=self.device)
                     diffusion_conds.append(cond_mel)
             else:
-                samples = [resampler_24K(sample) for sample in voice_samples]
+                samples = [resampler_24K(sample.to(ACC_DEVICE)).detach().to(CPU_DEVICE) for sample in voice_samples]
                 for chunk in tqdm(chunks, desc="Computing diffusion conditioning latents..."):
                     # check_for_kill_signal()
                     chunk = pad_or_truncate(chunk, chunk_size)
@@ -151,16 +153,23 @@ class TortoiseLatent():
                     diffusion_conds.append(cond_mel)
 
             auto_conds = torch.stack(auto_conds, dim=1)
-            # self.autoregressive = migrate_to_device( self.autoregressive, device )
             print('Entering Autoregressive Processing')
-            auto_latent = self.autoregressive.get_conditioning(auto_conds.to(self.device))
+            self.autoregressive = self.autoregressive.to(ACC_DEVICE)
+            do_gc()
+            auto_latent = self.autoregressive.get_conditioning(auto_conds)
             print('Finished Autoregressive Processing')
+            self.autoregressive = self.autoregressive.to(CPU_DEVICE)
+            do_gc()
             # self.autoregressive = migrate_to_device( self.autoregressive, self.device if self.preloaded_tensors else 'cpu' )
 
             diffusion_conds = torch.stack(diffusion_conds, dim=1)
-            print('Entering Diffusion Processing')
+            print('Entering Diffusion Processing')            
+            self.diffusion = self.diffusion.to(ACC_DEVICE)
+            do_gc()
             # self.diffusion = migrate_to_device( self.diffusion, device )
-            diffusion_latent = self.diffusion.get_conditioning(diffusion_conds.to(self.device))
+            diffusion_latent = self.diffusion.get_conditioning(diffusion_conds)            
+            self.diffusion = self.diffusion.to(CPU_DEVICE)
+            do_gc()
             print('Finished Diffusion Processing')
             # self.diffusion = migrate_to_device( self.diffusion, self.device if self.preloaded_tensors else 'cpu' )
 

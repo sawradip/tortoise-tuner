@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import utils.torch_intermediary as ml
 # from models.pieces.xtransformers import Encoder
 from models.pieces.clvp_cvvp_pieces import masked_mean, CheckpointedXTransformerEncoder, CollapsingTransformer, ConvFormatEmbedding, Encoder, Transformer
-from models.pieces.common_pieces import do_gc
+from utils.tools import do_gc
 
 class CLVP(nn.Module):
     """
